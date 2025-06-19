@@ -47,6 +47,13 @@ const App: React.FC = () => {
   const [bidderResult, setBidderResult] = useState<'win' | 'lose' | ''>('');
   const [pointsSortAsc, setPointsSortAsc] = useState(false);
   const isInitialLoad = useRef(true);
+  const addPlayerInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (gameState.currentPhase === 'setup' && addPlayerInputRef.current) {
+      addPlayerInputRef.current.focus();
+    }
+  }, [gameState.currentPhase]);
 
   // Save to localStorage only when component unmounts
   useEffect(() => {
@@ -72,6 +79,9 @@ const App: React.FC = () => {
         totalScores: { ...prev.totalScores, [name]: 0 },
       }));
       setPlayerInput('');
+      if (addPlayerInputRef.current) {
+        addPlayerInputRef.current.focus();
+      }
     }
   };
 
@@ -178,7 +188,7 @@ const App: React.FC = () => {
     setGameState(initialState);
     setPlayerInput('');
     setBidInput('');
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    localStorage.clear();
   };
 
   // Debug function to check localStorage
@@ -212,8 +222,6 @@ const App: React.FC = () => {
           <button onClick={resetGame} className="reset-button" style={{ 
             maxWidth: 80, 
             marginTop: 0,
-            padding: '0.4rem 0.8rem',
-            fontSize: '0.85rem'
           }}>
             Reset
           </button>
@@ -223,6 +231,7 @@ const App: React.FC = () => {
         <div className="setup-phase">
           <div className="input-group">
             <input
+              ref={addPlayerInputRef}
               type="text"
               placeholder="Enter player name"
               value={playerInput}
@@ -240,11 +249,11 @@ const App: React.FC = () => {
           {/* Table UI with Player Name and Total Points columns */}
           {gameState.players.length > 0 && (
             <div style={{ overflowX: 'auto', margin: '1.2rem 0' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 320 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 300,fontSize: '0.95rem' }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: '0.5rem', borderBottom: '2px solid #e0e0e0', fontWeight: 700, color: '#263859', fontSize: '1rem', textAlign: 'left' }}>Player</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '2px solid #e0e0e0', fontWeight: 700, color: '#263859', fontSize: '1rem', textAlign: 'center' }}>Total Points</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '2px solid #e0e0e0', fontWeight: 700, color: '#263859', textAlign: 'left' }}>Player</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '2px solid #e0e0e0', fontWeight: 700, color: '#263859', textAlign: 'center' }}>Total Points</th>
                     <th style={{ width: 48, borderBottom: '2px solid #e0e0e0' }}></th>
                   </tr>
                 </thead>
@@ -256,18 +265,18 @@ const App: React.FC = () => {
                     })
                     .map(player => (
                       <tr key={player.name}>
-                        <td style={{ padding: '0.5rem', textAlign: 'left', color: '#263859', fontWeight: 600 }}>{player.name}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center', color: '#3498db', fontWeight: 600 }}>{getTotalPoints(player.name)}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'left', color: '#263859' }}>{player.name}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'center', color: '#3498db',  }}>{getTotalPoints(player.name)}</td>
                         <td style={{ textAlign: 'center' }}>
                           <button
                             onClick={() => removePlayer(player.name)}
                             style={{
-                              background: '#e74c3c',
-                              color: '#fff',
+                              background: 'none',
+                              color: '#e74c3c',
                               border: 'none',
                               borderRadius: 6,
-                              padding: '0.15rem 0.7rem',
-                              fontSize: '0.85rem',
+                              padding: '0.2rem 0.5rem',
+                              fontSize: '1.1rem',
                               fontWeight: 600,
                               cursor: 'pointer',
                               transition: 'background 0.15s',
@@ -277,8 +286,11 @@ const App: React.FC = () => {
                               margin: '0 auto',
                             }}
                             title={`Remove ${player.name}`}
+                            aria-label={`Remove ${player.name}`}
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M9 3a3 3 0 0 1 6 0h5a1 1 0 1 1 0 2h-1.07l-1.2 14.39A3 3 0 0 1 14.74 22H9.26a3 3 0 0 1-2.99-2.61L5.07 5H4a1 1 0 1 1 0-2h5Zm2 0a1 1 0 1 0 2 0h-2Zm-4.93 2 .99 13.19A1 1 0 0 0 9.26 20h5.48a1 1 0 0 0 .99-.81L16.93 5H7.07Zm2.43 4a1 1 0 0 1 2 0v6a1 1 0 1 1-2 0V9Zm4 0a1 1 0 1 1 2 0v6a1 1 0 1 1-2 0V9Z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
+                              <path fill="#e74c3c" d="M9 3a3 3 0 0 1 6 0h5a1 1 0 1 1 0 2h-1.07l-1.2 14.39A3 3 0 0 1 14.74 22H9.26a3 3 0 0 1-2.99-2.61L5.07 5H4a1 1 0 1 1 0-2h5Zm2 0a1 1 0 1 0 2 0h-2Zm-4.93 2 .99 13.19A1 1 0 0 0 9.26 20h5.48a1 1 0 0 0 .99-.81L16.93 5H7.07Zm2.43 4a1 1 0 0 1 2 0v6a1 1 0 1 1-2 0V9Zm4 0a1 1 0 1 1 2 0v6a1 1 0 1 1-2 0V9Z"/>
+                            </svg>
                           </button>
                         </td>
                       </tr>
@@ -344,23 +356,41 @@ const App: React.FC = () => {
                 ))}
             </select>
           </div>
+          {selectedPartners.length > 0 && (
+            <div style={{ margin: '0.5rem 0', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {selectedPartners.map(name => (
+                <span key={name} style={{
+                  display: 'inline-block',
+                  background: '#eaf6fb',
+                  color: '#263859',
+                  borderRadius: '16px',
+                  padding: '0.18rem 0.9rem',
+                  fontSize: '0.97rem',
+                  fontWeight: 500,
+                  boxShadow: '0 1px 4px rgba(44,62,80,0.07)',
+                  marginBottom: '1.1rem'
+                }}>{name}</span>
+              ))}
+            </div>
+          )}
           <div className="input-group" style={{ gap: '0.5rem' }}>
             <label style={{ marginRight: 8 }}>Did the bidder win?</label>
             <button
               type="button"
               onClick={() => setBidderResult('win')}
               style={{
-                background: bidderResult === 'win' ? '#2ecc71' : '#f3f3f3',
-                color: bidderResult === 'win' ? '#fff' : '#263859',
-                border: 'none',
+                background: bidderResult === 'win' ? '#f3f3f3' : '#f3f3f3',
+                color: bidderResult === 'win' ? '#2ecc71' : '#263859',
+                border: '1.5px solid',
+                borderColor: bidderResult === 'win' ? '#2ecc71' : '#e0e0e0',
                 borderRadius: 6,
                 padding: '0.5rem 1.2rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                boxShadow: bidderResult === 'win' ? '0 2px 8px rgba(46,204,113,0.12)' : 'none',
-                outline: bidderResult === 'win' ? '2px solid #27ae60' : 'none',
+                boxShadow: 'none',
+                outline:'none',
                 transition: 'all 0.15s',
-                marginRight: 8
+                marginRight: 8,
               }}
             >
               Win
@@ -369,15 +399,16 @@ const App: React.FC = () => {
               type="button"
               onClick={() => setBidderResult('lose')}
               style={{
-                background: bidderResult === 'lose' ? '#e74c3c' : '#f3f3f3',
-                color: bidderResult === 'lose' ? '#fff' : '#263859',
-                border: 'none',
+                background: bidderResult === 'lose' ? '#f3f3f3' : '#f3f3f3',
+                color: bidderResult === 'lose' ? '#e74c3c' : '#263859',
+                border: '1.5px solid',
+                borderColor: bidderResult === 'lose' ? '#e74c3c' : '#e0e0e0',
                 borderRadius: 6,
                 padding: '0.5rem 1.2rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                boxShadow: bidderResult === 'lose' ? '0 2px 8px rgba(231,76,60,0.12)' : 'none',
-                outline: bidderResult === 'lose' ? '2px solid #c0392b' : 'none',
+                boxShadow: 'none',
+                outline: 'none',
                 transition: 'all 0.15s'
               }}
             >

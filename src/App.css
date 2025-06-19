@@ -12,6 +12,7 @@
 h1 {
   text-align: center;
   color: #1a2636;
+  margin: 0;
   margin-bottom: 1.2rem;
   letter-spacing: 1.2px;
   font-weight: 700;
@@ -20,6 +21,7 @@ h1 {
 
 h2 {
   color: #263859;
+  margin: 0;
   margin-bottom: 0.7rem;
   font-weight: 600;
   font-size: 1.08rem;
@@ -261,12 +263,10 @@ th, td {
 
 @media (max-width: 600px) {
   .container {
-    width: 100vw;
     max-width: 100vw;
     height: 100vh;
     min-height: 100vh;
     box-sizing: border-box;
-    padding: 0.3rem;
     min-width: 0;
     border-radius: 0;
     box-shadow: none;
@@ -276,13 +276,18 @@ th, td {
     justify-content: flex-start;
     align-items: stretch;
   }
-
+  
   h1, h2 {
     font-size: 1rem;
+    margin: 0;
     margin-bottom: 0.5rem;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+  }
+
+  h1{
+    font-size: 1.2rem;
   }
 
   .input-group {
@@ -327,7 +332,8 @@ th, td {
 
   .bidding-phase,
   .points-phase {
-    padding: 0.7rem 0.3rem;
+    /* padding: 0.7rem 0.3rem; */
+    padding: 1rem 1rem;
     border-radius: 8px;
   }
 
@@ -337,5 +343,27 @@ th, td {
     gap: 0.15rem;
     font-size: 0.95em;
     padding: 0.2rem 0.1rem;
+  }
+
+  .input-group button {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .start-button,
+  .reset-button {
+    font-size: 0.95rem;
+    padding: 0.6rem 0.7rem
+  }
+
+  .player-item button {
+    font-size: 0.9rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .input-group input,
+  .input-group select {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.6rem;
   }
 } 
