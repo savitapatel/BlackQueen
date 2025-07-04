@@ -20,6 +20,7 @@ export interface GameState {
   currentBid: number;
   points: Points;
   totalScores: { [player: string]: number };
+  roundHistory: Points[];
   selectedPartners?: string[];
   bidderResult?: 'win' | 'lose';
 }
@@ -31,6 +32,7 @@ const initialState: GameState = {
   currentBid: 0,
   points: {},
   totalScores: {},
+  roundHistory: [],
   selectedPartners: [],
   bidderResult: undefined,
 };
@@ -45,15 +47,23 @@ const App: React.FC = () => {
   const [selectedBidder, setSelectedBidder] = useState<string>('');
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [bidderResult, setBidderResult] = useState<'win' | 'lose' | ''>('');
-  const [pointsSortAsc, setPointsSortAsc] = useState(false);
-  const isInitialLoad = useRef(true);
   const addPlayerInputRef = useRef<HTMLInputElement>(null);
+  const [showTotalPoints, setShowTotalPoints] = useState(false);
 
   useEffect(() => {
-    if (gameState.currentPhase === 'setup' && addPlayerInputRef.current) {
+    if (gameState.currentPhase !== 'setup' || !addPlayerInputRef.current) return;
+  
+    if (gameState.roundHistory?.length > 0) {
+      moveTableScroll();
+    } else {
       addPlayerInputRef.current.focus();
     }
-  }, [gameState.currentPhase]);
+  }, [gameState.currentPhase, gameState.roundHistory]);
+  
+  
+  useEffect(()=>{
+    if(showTotalPoints) moveTableScroll();
+  },[showTotalPoints])
 
   // Save to localStorage only when component unmounts
   useEffect(() => {
@@ -175,6 +185,7 @@ const App: React.FC = () => {
       return {
         ...prev,
         totalScores: newTotalScores,
+        roundHistory: [...(prev.roundHistory || []), prev.points],
         currentPhase: 'setup',
         points: {},
         selectedPartners: [],
@@ -182,6 +193,14 @@ const App: React.FC = () => {
       };
     });
   };
+  
+  // Scroll to the last column after a short delay to ensure DOM is updated
+  const moveTableScroll =()=>{
+      const tableContainer = document.querySelector('.table-container');
+      if (tableContainer) {
+        tableContainer.scrollLeft = tableContainer.scrollWidth;
+      }
+  }
 
   // Reset game
   const resetGame = () => {
@@ -191,26 +210,13 @@ const App: React.FC = () => {
     localStorage.clear();
   };
 
-  // Debug function to check localStorage
-  const debugLocalStorage = () => {
-    console.log('=== DEBUG LOCALSTORAGE ===');
-    console.log('localStorage.getItem(LOCAL_STORAGE_KEY):', localStorage.getItem(LOCAL_STORAGE_KEY));
-    console.log('Current gameState:', gameState);
-    console.log('isInitialLoad.current:', isInitialLoad.current);
-    console.log('=== END DEBUG ===');
-  };
-
-  // Clear localStorage for testing
-  const clearLocalStorage = () => {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-    console.log('localStorage cleared');
-    alert('localStorage cleared for testing');
-  };
-
   // Helper to get total points for a player (from totalScores)
   const getTotalPoints = (playerName: string) => {
     return gameState.totalScores[playerName] ?? 0;
   };
+
+  // Find the highest total score
+  const maxTotal = Math.max(...gameState.players.map(p => getTotalPoints(p.name)));
 
   return (
     <div className="container">
@@ -242,57 +248,79 @@ const App: React.FC = () => {
           </div>
 
           {gameState.players.length >= 2 && (
-            <button onClick={startGame} className="start-button">
-              Start Game
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '1rem', marginTop: '0.5rem' }}>
+              <button onClick={startGame} className="start-button">
+                {gameState.roundHistory.length === 0 ?  'Start Game':'Next Round'}
+              </button>
+              <button onClick={() => setShowTotalPoints(!showTotalPoints)} className="start-button"
+                style={{  borderRadius: 8, background: 'none', color: '#263859', border: '1.5px solid #3498db',  }}
+                aria-label={showTotalPoints ? 'Hide Total Points' : 'Show Total Points'}
+                title={showTotalPoints ? 'Hide Total Points' : 'Show Total Points'}
+              >
+                { !showTotalPoints ? (
+                  <>
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style={{ verticalAlign: 'middle' }}>
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#263859" strokeWidth="2" fill="none"/>
+                      <circle cx="12" cy="12" r="3" stroke="#263859" strokeWidth="2" fill="none"/>
+                    </svg>
+                    {" "}Total Points
+                  </>
+                ) : (
+                  <>
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style={{ verticalAlign: 'middle' }}>
+                      <path d="M17.94 17.94C16.11 19.25 14.13 20 12 20c-7 0-11-8-11-8a21.77 21.77 0 0 1 5.06-6.06M1 1l22 22" stroke="#e74c3c" strokeWidth="2" fill="none"/>
+                    </svg>
+                    {" "}Total Points
+                  </>
+                )}
+              </button>
+            </div>
           )}
+
           {/* Table UI with Player Name and Total Points columns */}
           {gameState.players.length > 0 && (
-            <div style={{ overflowX: 'auto', margin: '1.2rem 0' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 300,fontSize: '0.95rem' }}>
+            <div className="table-container">
+              <table className="score-table">
                 <thead>
                   <tr>
-                    <th style={{ padding: '0.5rem', borderBottom: '2px solid #e0e0e0', fontWeight: 700, color: '#263859', textAlign: 'left' }}>Player</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '2px solid #e0e0e0', fontWeight: 700, color: '#263859', textAlign: 'center' }}>Total Points</th>
-                    <th style={{ width: 48, borderBottom: '2px solid #e0e0e0' }}></th>
+                    <th className="sticky-col player-header">Player</th>
+                    {gameState.roundHistory?.map((_, idx) => (
+                      <th key={`round-${idx}`} className="round-header">{`Round ${idx + 1}`}</th>
+                    ))}
+                    {showTotalPoints && (
+                      <th className="sticky-total-col total-header">Total Points</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {[...gameState.players]
-                    .sort((a, b) => {
-                      const diff = getTotalPoints(a.name) - getTotalPoints(b.name);
-                      return pointsSortAsc ? diff : -diff;
-                    })
                     .map(player => (
-                      <tr key={player.name}>
-                        <td style={{ padding: '0.5rem', textAlign: 'left', color: '#263859' }}>{player.name}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center', color: '#3498db',  }}>{getTotalPoints(player.name)}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <button
-                            onClick={() => removePlayer(player.name)}
-                            style={{
-                              background: 'none',
-                              color: '#e74c3c',
-                              border: 'none',
-                              borderRadius: 6,
-                              padding: '0.2rem 0.5rem',
-                              fontSize: '1.1rem',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              transition: 'background 0.15s',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              margin: '0 auto',
-                            }}
-                            title={`Remove ${player.name}`}
-                            aria-label={`Remove ${player.name}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
-                              <path fill="#e74c3c" d="M9 3a3 3 0 0 1 6 0h5a1 1 0 1 1 0 2h-1.07l-1.2 14.39A3 3 0 0 1 14.74 22H9.26a3 3 0 0 1-2.99-2.61L5.07 5H4a1 1 0 1 1 0-2h5Zm2 0a1 1 0 1 0 2 0h-2Zm-4.93 2 .99 13.19A1 1 0 0 0 9.26 20h5.48a1 1 0 0 0 .99-.81L16.93 5H7.07Zm2.43 4a1 1 0 0 1 2 0v6a1 1 0 1 1-2 0V9Zm4 0a1 1 0 1 1 2 0v6a1 1 0 1 1-2 0V9Z"/>
-                            </svg>
-                          </button>
+                      <tr key={player.name} className="player-row">
+                        <td className="sticky-cell player-cell">
+                          <div className="player-cell-content">
+                            <button
+                              onClick={() => removePlayer(player.name)}
+                              className="remove-btn"
+                              title={`Remove ${player.name}`}
+                              aria-label={`Remove ${player.name}`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24">
+                                <path fill="#e74c3c" d="M9 3a3 3 0 0 1 6 0h5a1 1 0 1 1 0 2h-1.07l-1.2 14.39A3 3 0 0 1 14.74 22H9.26a3 3 0 0 1-2.99-2.61L5.07 5H4a1 1 0 1 1 0-2h5Zm2 0a1 1 0 1 0 2 0h-2Zm-4.93 2 .99 13.19A1 1 0 0 0 9.26 20h5.48a1 1 0 0 0 .99-.81L16.93 5H7.07Zm2.43 4a1 1 0 0 1 2 0v6a1 1 0 1 1-2 0V9Zm4 0a1 1 0 1 1 2 0v6a1 1 0 1 1-2 0V9Z"/>
+                              </svg>
+                            </button>
+                            <span>{player.name}</span>
+                          </div>
                         </td>
+                        {gameState.roundHistory?.map((round, idx) => (
+                          <td key={`round-${idx}-player-${player.name}`} className="round-cell">
+                            {round[player.name] ?? 0}
+                          </td>
+                        ))}
+                        {showTotalPoints && (
+                          <td className={`sticky-total-cell total-cell${getTotalPoints(player.name) === maxTotal && maxTotal > 0 ? ' highlight-green' : ''}`}>
+                            {getTotalPoints(player.name)}
+                          </td>
+                        )}
                       </tr>
                     ))}
                 </tbody>
